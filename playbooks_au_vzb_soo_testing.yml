@@ -1,0 +1,232 @@
+---
+
+- name: Testing AU VzB SOO Primary, Secondary & tertiary
+  gather_facts: no
+  hosts: ausyd:aumel:aubne:auper:sg:audc
+  vars:
+    provider:
+      host: "{{ansible_host}}"
+      # username and pwd will be used when calling Ansible from command-line --user=<usernmae> --ask-pass
+
+
+  tasks:
+
+    - name: Task1.1 disable network 0.0.0.0 backdoor on branch router (ausyd)
+      ios_config:
+        parents: "router bgp 652"
+        lines:
+          - no network 0.0.0.0 backdoor
+      when: "'ausyd' in inventory_hostname"
+
+
+    - name: Task1.2 disable network 0.0.0.0 backdoor on branch router (aumel)
+      ios_config:
+        parents: "router bgp 652"
+        lines:
+          - no network 0.0.0.0 backdoor
+      when: "'aumel' in inventory_hostname"
+
+
+    - name: Task1.3 disable network 0.0.0.0 backdoor on branch router (aubne)
+      ios_config:
+        parents: "router bgp 6514"
+        lines:
+          - no network 0.0.0.0 backdoor
+      when: "'aubne' in inventory_hostname"
+
+
+    - name: Task1.4 disable network 0.0.0.0 backdoor on branch router (auper)
+      ios_config:
+        parents: "router bgp 66"
+        lines:
+          - no network 0.0.0.0 backdoor
+      when: "'auper' in inventory_hostname"
+
+
+    - name: Task1.5 Pause before next Task [traceroute] to ensure RIB convergence when ready press Enter!
+      pause:
+
+
+
+
+
+
+    - name: Task2.1 Traceroute from routers to 4.2.2.2 to confirm Pri. SOO is audc
+      ios_command:
+        provider: "{{ provider }}"
+        commands: traceroute 4.2.2.2 numeric ttl 1 5
+      register: output
+      when: inventory_hostname != "sg" and inventory_hostname != "audc"
+
+
+    - name: Task2.2 Display Traceroute Output before any changes (via Pri. SOO audc)
+      debug:
+        var: output.stdout_lines
+
+
+    - name: Task2.3 Pause before next Task [Disable SSO Primary for AU] when ready press Enter!
+      pause:
+
+
+
+
+
+
+
+    - name: Task3.1 Disable SSO Primary for AU [audc]
+      ios_config:
+        parents: "router bgp 650"
+        lines:
+          - no network 0.0.0.0
+      when: "'audc' in inventory_hostname"
+
+
+    - name: Task3.2 Pause before next Task [traceroute] to ensure SSO Sec. Route is installed when ready press Enter!
+      pause:
+
+
+
+
+
+
+
+    - name: Task4.1 Traceroute from routers to 4.2.2.2
+      ios_command:
+        provider: "{{ provider }}"
+        commands: traceroute 4.2.2.2 numeric ttl 1 5
+      register: output
+      when: inventory_hostname != "sg" and inventory_hostname != "audc"
+
+
+    - name: Task4.2 Display Traceroute Output (via Sec. SOO sg)
+      debug:
+        var: output.stdout_lines
+
+
+    - name: Task4.3 Pause before next Task [Disable SSO Secondary for AU] when ready press Enter!
+      pause:
+
+
+
+
+
+    - name: Task5.1 Disable SSO Secondary for AU [sg]
+      ios_config:
+        parents: "router bgp 112"
+        lines:
+          - no network 0.0.0.0
+      when: "'sg' in inventory_hostname"
+
+
+    - name: Task5.2 Pause next Task [traceroute] to ensure SSO Tertiary Route is installed when ready press Enter!
+      pause:
+
+
+
+
+
+    - name: Task6.1 Traceroute from routers to 4.2.2.2
+      ios_command:
+        provider: "{{ provider }}"
+        commands: traceroute 4.2.2.2 numeric ttl 1 5
+      register: output
+      when: inventory_hostname != "sg" and inventory_hostname != "audc"
+
+
+    - name: Task6.2 Display Output (via Ter. HAR DC )
+      debug:
+        var: output.stdout_lines
+
+
+    - name: Task6.3 Pause before next Task [Enable SSO Primary & Secondary for AU] when ready press Enter!
+      pause:
+
+
+
+
+
+    - name: Task7.1 Enable SSO Primary for AU [audc]
+      ios_config:
+        parents: "router bgp 650"
+        lines:
+          - network 0.0.0.0
+      when: "'audc' in inventory_hostname"
+
+
+    - name: Task7.2 Enable SSO Secondary for Asia [sg]
+      ios_config:
+        parents: "router bgp 121"
+        lines:
+          - network 0.0.0.0
+      when: "'sg' in inventory_hostname" 
+          
+          
+    - name: Task7.3 Pause before next Task [traceroute] to ensure SSO Primary Route is installed when ready press Enter!
+      pause:
+
+
+
+
+
+    - name: Task8.1 Traceroute from hosts to 4.2.2.2 After all changes to config Pri. SSO in Path
+      ios_command:
+        provider: "{{ provider }}"
+        commands: traceroute 4.2.2.2 numeric ttl 1 5
+      register: output
+      when: inventory_hostname != "sg" and inventory_hostname != "audc"      
+
+      
+    - name: Task8.2 Display FINAL Output (via Pri. SOO audc )
+      debug:
+        var: output.stdout_lines          
+
+    - name: Task8.3 Pause before next Task [Add BGP backdoor back] when ready press Enter!
+      pause:
+
+
+
+
+    - name: Task9.1 Add network 0.0.0.0 backdoor on branch router (ausyd)
+      ios_config:
+        parents: "router bgp 652"
+        lines:
+          - network 0.0.0.0 backdoor
+      when: "'ausyd' in inventory_hostname"
+
+
+    - name: Task9.2 Add network 0.0.0.0 backdoor on branch router (aumel)
+      ios_config:
+        parents: "router bgp 652"
+        lines:
+          - network 0.0.0.0 backdoor
+      when: "'aumel' in inventory_hostname"
+
+
+    - name: Task9.3 Add network 0.0.0.0 backdoor on branch router (aubne)
+      ios_config:
+        parents: "router bgp 6514"
+        lines:
+          - network 0.0.0.0 backdoor
+      when: "'aubne' in inventory_hostname"
+
+
+    - name: Task9.4 Add network 0.0.0.0 backdoor on branch router (auper)
+      ios_config:
+        parents: "router bgp 616"
+        lines:
+          - network 0.0.0.0 backdoor
+      when: "'auper' in inventory_hostname"
+
+
+
+    - name: Task10.1 Final Traceroute from hosts to 4.2.2.2 After all changes to Path via CS/AAPT via Perth DC
+      ios_command:
+        provider: "{{ provider }}"
+        commands: traceroute 4.2.2.2 numeric ttl 1 2
+      register: output
+      when: inventory_hostname != "sg" and inventory_hostname != "audc"      
+
+      
+    - name: Task10.2 Display FINAL Output (via CS/AAPT via Perth DC )
+      debug:
+        var: output.stdout_lines       
